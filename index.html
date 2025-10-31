@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Clubhouse Automation Dashboard — Developed by Kannan</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(to right, #a2d2ff, #caf0f8);
+      text-align: center;
+      padding: 30px;
+    }
+    h1 { color: #023e8a; }
+    .card {
+      background: white;
+      border-radius: 15px;
+      padding: 20px;
+      margin: 20px auto;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      max-width: 600px;
+    }
+    input, button {
+      width: 90%;
+      margin: 6px 0;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+    button {
+      background: #0077b6;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      border: none;
+    }
+    button:hover { background: #0096c7; }
+    img { border-radius: 50%; margin-top: 10px; width: 100px; height: 100px; }
+  </style>
+</head>
+<body>
+
+  <h1>🤖 Welcome to Clubhouse Automation Tools</h1>
+  <p>Developed by <b>Kannan</b></p>
+
+  <div class="card">
+    <h2>Authenticate</h2>
+    <input id="token" placeholder="Enter your Clubhouse token">
+    <button onclick="loadProfile()">Load My Profile</button>
+    <div id="welcome"></div>
+    <img id="profilePic" src="" alt="" style="display:none;">
+  </div>
+
+  <div class="card" id="updateSection" style="display:none;">
+    <h2>Update Automation</h2>
+    <select id="action">
+      <option value="update_name">Update Name</option>
+      <option value="update_username">Update Username</option>
+      <option value="update_alias">Update Alias Name</option>
+      <option value="update_bio">Update Bio</option>
+      <option value="update_email">Update Email</option>
+      <option value="update_phone">Change Phone Number</option>
+      <option value="remove_alias">Remove Alias Name</option>
+      <option value="remove_bio">Remove Bio</option>
+    </select>
+    <input id="value" placeholder="Enter new value (leave blank if removing)">
+    <button onclick="updateInfo()">Update Now</button>
+  </div>
+
+  <div class="card">
+    <h2>Profile Tools (using our system token)</h2>
+    <input id="usernameLookup" placeholder="Enter Username">
+    <button onclick="fetchProfile()">Show Profile Info</button>
+    <button onclick="downloadPic()">Download Profile Picture</button>
+    <pre id="profileData" style="text-align:left;white-space:pre-wrap;"></pre>
+  </div>
+
+  <script>
+    const API_BASE = "https://your-backend-url.onrender.com";
+    let token = "";
+
+    async function loadProfile() {
+      token = document.getElementById("token").value;
+      const res = await fetch(`${API_BASE}/me`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({token})
+      });
+      const data = await res.json();
+      if (data.user_profile) {
+        document.getElementById("welcome").innerText =
+          `Welcome, ${data.user_profile.name || "User"}!`;
+        if (data.user_profile.photo_url) {
+          document.getElementById("profilePic").src = data.user_profile.photo_url;
+          document.getElementById("profilePic").style.display = "block";
+        }
+        document.getElementById("updateSection").style.display = "block";
+      } else {
+        alert("Invalid token or error loading profile.");
+      }
+    }
+
+    async function updateInfo() {
+      const action = document.getElementById("action").value;
+      const value = document.getElementById("value").value;
+      const res = await fetch(`${API_BASE}/update`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({token, action, value})
+      });
+      const data = await res.json();
+      alert("Response:\n" + JSON.stringify(data, null, 2));
+    }
+
+    async function fetchProfile() {
+      const username = document.getElementById("usernameLookup").value;
+      const res = await fetch(`${API_BASE}/profile_info`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({username})
+      });
+      const data = await res.json();
+      document.getElementById("profileData").textContent = JSON.stringify(data, null, 2);
+      const blob = new Blob([JSON.stringify(data, null, 2)], {type: "text/plain"});
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `${username}_profile.txt`;
+      a.click();
+    }
+
+    async function downloadPic() {
+      const username = document.getElementById("usernameLookup").value;
+      window.open(`${API_BASE}/download_picture`, "_blank");
+      await fetch(`${API_BASE}/download_picture`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({username})
+      });
+    }
+  </script>
+
+</body>
+</html>
